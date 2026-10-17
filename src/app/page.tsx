@@ -1,14 +1,28 @@
 import { getRecalls, GROUPS } from "@/lib/recalls";
 import Feed from "@/components/Feed";
 
-// Rebuild the homepage from fresh feed data once a day.
-export const revalidate = 86400;
+// Rebuild the homepage from fresh feed data hourly.
+export const revalidate = 3600;
 
 const HOMEPAGE_LIMIT = 120;
+
+function formatDay(d: string): string {
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return d;
+  return date.toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 
 export default async function Home() {
   const all = await getRecalls();
   const active = all.filter((r) => !r.archived).slice(0, HOMEPAGE_LIMIT);
+  const newest = all.reduce(
+    (max, r) => (r.lastUpdated > max ? r.lastUpdated : max),
+    ""
+  );
 
   const counts: Record<string, number> = { all: active.length };
   for (const g of GROUPS) counts[g.id] = 0;
@@ -27,6 +41,9 @@ export default async function Home() {
           matters to a household — food and medicine first. Tap any recall for
           the official Government of Canada notice.
         </p>
+        {newest && (
+          <p className="synced mono">Data current to {formatDay(newest)}</p>
+        )}
       </div>
 
       <Feed recalls={active} counts={counts} />

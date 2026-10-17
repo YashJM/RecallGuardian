@@ -320,7 +320,7 @@ function normalize(r: RawRecall): Recall {
 // In-memory memo. The feed is ~15MB, over Next's fetch-cache limit, so we hold
 // it in module scope and refresh on a TTL instead of relying on the data cache.
 let memo: { data: Recall[]; ts: number } | null = null;
-const TTL_MS = 24 * 60 * 60 * 1000;
+const TTL_MS = 60 * 60 * 1000; // 1h — the gov bulk file updates ~daily, so this is plenty fresh
 
 export async function getRecalls(): Promise<Recall[]> {
   if (memo && Date.now() - memo.ts < TTL_MS) return memo.data;

@@ -1,0 +1,10 @@
+# Netlify picks up Next.js automatically via @netlify/plugin-nextjs (auto-installed).
+# SSR, ISR and the sitemap all work on Netlify's Next runtime.
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

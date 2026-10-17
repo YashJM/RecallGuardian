@@ -3,7 +3,7 @@ import { getRecalls } from "@/lib/recalls";
 
 const BASE = "https://recallguardian.ca";
 
-export const revalidate = 86400;
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const all = await getRecalls();

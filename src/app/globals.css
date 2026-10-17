@@ -148,6 +148,11 @@ h4,
   border-radius: 50%;
   background: var(--brand);
 }
+.page-head p.synced {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin: 12px 0 0;
+}
 
 /* ---- filter bar ---- */
 .filterbar {

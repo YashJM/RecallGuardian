@@ -9,8 +9,8 @@ import {
 } from "@/lib/recalls";
 import RecallCard from "@/components/RecallCard";
 
-// Rebuild each recall page from fresh data once a day; render unknown ones on demand.
-export const revalidate = 86400;
+// Rebuild each recall page from fresh data hourly; render unknown ones on demand.
+export const revalidate = 3600;
 export const dynamicParams = true;
 
 // Pre-render only the most recent recalls at build time (fast builds); every
