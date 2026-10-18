@@ -1,4 +1,4 @@
-import { getRecalls, GROUPS } from "@/lib/recalls";
+import { getRecalls, GROUPS, whoAtRisk } from "@/lib/recalls";
 import Feed from "@/components/Feed";
 
 // Rebuild the homepage from fresh feed data hourly.
@@ -18,7 +18,10 @@ function formatDay(d: string): string {
 
 export default async function Home() {
   const all = await getRecalls();
-  const active = all.filter((r) => !r.archived).slice(0, HOMEPAGE_LIMIT);
+  const active = all
+    .filter((r) => !r.archived)
+    .slice(0, HOMEPAGE_LIMIT)
+    .map((r) => ({ ...r, atRisk: whoAtRisk(r) }));
   const newest = all.reduce(
     (max, r) => (r.lastUpdated > max ? r.lastUpdated : max),
     ""

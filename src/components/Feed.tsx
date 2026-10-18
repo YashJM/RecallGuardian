@@ -9,7 +9,7 @@ export default function Feed({
   recalls,
   counts,
 }: {
-  recalls: Recall[];
+  recalls: (Recall & { atRisk?: string | null })[];
   counts: Record<string, number>;
 }) {
   const [active, setActive] = useState<Group | "all">("all");

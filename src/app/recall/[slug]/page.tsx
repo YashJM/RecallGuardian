@@ -215,7 +215,7 @@ export default async function RecallPage({
             <h2>More {r.group} recalls</h2>
             <div className="feed">
               {related.map((x) => (
-                <RecallCard key={x.nid} r={x} />
+                <RecallCard key={x.nid} r={{ ...x, atRisk: whoAtRisk(x) }} />
               ))}
             </div>
           </section>
