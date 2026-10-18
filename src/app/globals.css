@@ -333,7 +333,29 @@ a {
 .rrow.critical .rail { background: var(--sev-critical); }
 .rrow.high .rail { background: var(--sev-high); }
 .rrow.standard .rail { background: var(--sev-standard); }
-.rrow .rbody { padding: 13px 16px; min-width: 0; }
+.rrow .rmain { display: flex; gap: 13px; padding: 12px 14px; min-width: 0; }
+.rrow .thumb {
+  width: 84px;
+  height: 84px;
+  flex: none;
+  border-radius: 9px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+}
+.rrow .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.rrow .thumb.tile { color: #fff; border: none; }
+.rrow .thumb.tile.food { background: var(--cat-food); }
+.rrow .thumb.tile.medicine { background: var(--cat-med); }
+.rrow .thumb.tile.kids { background: var(--cat-kids); }
+.rrow .thumb.tile.vehicles { background: var(--cat-veh); }
+.rrow .thumb.tile.household { background: var(--cat-house); }
+.rrow .thumb.tile.other { background: var(--cat-other); }
+.rrow .thumb.tile svg { width: 40%; height: 40%; }
+.rrow .thumb > svg { width: 38%; height: 38%; color: var(--muted); opacity: 0.7; }
+.rrow .rbody { min-width: 0; flex: 1; }
 .rrow .rmeta {
   display: flex;
   align-items: center;
@@ -555,6 +577,22 @@ a {
   margin-top: 26px;
 }
 .backlink:hover { color: var(--ink); }
+.backtop {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 15px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+.backtop:hover { border-color: var(--navy); }
 .related { margin-top: 40px; }
 .related h2 { font-family: var(--font-serif), Georgia, serif; font-size: 1.15rem; margin: 0 0 14px; }
 

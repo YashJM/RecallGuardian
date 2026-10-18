@@ -1,5 +1,8 @@
-import { getRecalls, GROUPS, whoAtRisk } from "@/lib/recalls";
+import { getRecalls, GROUPS, whoAtRisk, getRecallExtras } from "@/lib/recalls";
 import Feed from "@/components/Feed";
+
+// How many of the default (food) items to fetch real product photos for.
+const PHOTO_ENRICH = 40;
 
 // Rebuild the homepage from fresh feed data hourly.
 export const revalidate = 3600;
@@ -18,18 +21,33 @@ function formatDay(d: string): string {
 
 export default async function Home() {
   const all = await getRecalls();
-  const active = all
-    .filter((r) => !r.archived)
-    .slice(0, HOMEPAGE_LIMIT)
-    .map((r) => ({ ...r, atRisk: whoAtRisk(r) }));
+  const base = all.filter((r) => !r.archived).slice(0, HOMEPAGE_LIMIT);
   const newest = all.reduce(
     (max, r) => (r.lastUpdated > max ? r.lastUpdated : max),
     ""
   );
 
+  // Fetch real product photos for the top food items (the default view).
+  const toEnrich = base.filter((r) => r.group === "food").slice(0, PHOTO_ENRICH);
+  const photos = new Map(
+    await Promise.all(
+      toEnrich.map(
+        async (r) => [r.nid, (await getRecallExtras(r)).imageUrl] as const
+      )
+    )
+  );
+
+  const active = base.map((r) => ({
+    ...r,
+    atRisk: whoAtRisk(r),
+    imageUrl: photos.get(r.nid) ?? null,
+  }));
+
   const counts: Record<string, number> = { all: active.length };
   for (const g of GROUPS) counts[g.id] = 0;
   for (const r of active) counts[r.group] = (counts[r.group] ?? 0) + 1;
+
+  const defaultGroup = counts.food > 0 ? "food" : "all";
 
   return (
     <main className="wrap">
@@ -46,7 +64,7 @@ export default async function Home() {
         )}
       </div>
 
-      <Feed recalls={active} counts={counts} />
+      <Feed recalls={active} counts={counts} initial={defaultGroup} />
     </main>
   );
 }

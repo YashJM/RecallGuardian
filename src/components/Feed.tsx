@@ -8,11 +8,13 @@ import { Medallion } from "./icons";
 export default function Feed({
   recalls,
   counts,
+  initial = "all",
 }: {
-  recalls: (Recall & { atRisk?: string | null })[];
+  recalls: (Recall & { atRisk?: string | null; imageUrl?: string | null })[];
   counts: Record<string, number>;
+  initial?: Group | "all";
 }) {
-  const [active, setActive] = useState<Group | "all">("all");
+  const [active, setActive] = useState<Group | "all">(initial);
   const [query, setQuery] = useState("");
 
   const q = query.trim().toLowerCase();

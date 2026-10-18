@@ -11,6 +11,7 @@ import {
   nidFromSlug,
 } from "@/lib/recalls";
 import RecallCard from "@/components/RecallCard";
+import BackLink from "@/components/BackLink";
 import { CatGlyph, Medallion, WarnIcon, OutboundIcon, PinIcon } from "@/components/icons";
 
 // Rebuild each recall page from fresh data hourly; render unknown ones on demand.
@@ -103,6 +104,7 @@ export default async function RecallPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div style={{ paddingTop: "clamp(20px,4vw,34px)" }}>
+        <BackLink />
         <article className={`detail ${r.tier}`}>
           <div className="bar" />
           <div className="body">
