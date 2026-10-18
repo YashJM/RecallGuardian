@@ -28,7 +28,6 @@ export default function RecallCard({
 }) {
   return (
     <Link className={`rrow ${r.tier}`} href={`/recall/${r.slug}`}>
-      <span className="rail" aria-hidden="true" />
       <div className="rmain">
         {r.imageUrl ? (
           <span className="thumb">
@@ -42,7 +41,10 @@ export default function RecallCard({
         )}
         <div className="rbody">
           <div className="rmeta">
-            <span className={`prio ${r.tier}`}>{TIER_LABEL[r.tier]}</span>
+            <span className={`sev ${r.tier}`}>
+              <span className="d" aria-hidden="true" />
+              {TIER_LABEL[r.tier]}
+            </span>
             <Medallion group={r.group} sm />
             <span className="cat">{r.category}</span>
             {r.lastUpdated && <span className="rdate">{relativeDate(r.lastUpdated)}</span>}

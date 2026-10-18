@@ -173,6 +173,33 @@ a {
   align-items: center;
   gap: 7px;
 }
+/* one-tap "is X recalled?" checks */
+.quickrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 2px;
+}
+.quickrow .lbl {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.qchip {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.qchip:hover { border-color: var(--navy); }
+.qchip.clear { color: var(--brand); border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); }
 
 /* ---- category medallions ---- */
 .med {
@@ -316,16 +343,35 @@ a {
   margin-bottom: 28px;
 }
 .rrow {
-  display: grid;
-  grid-template-columns: 4px 1fr;
+  display: block;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 1px 1px rgba(20, 39, 59, 0.04);
 }
+/* severity as a small dot, not a loud bar/pill */
+.rrow .sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rrow .sev .d {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+.rrow .sev.critical .d { background: var(--sev-critical); }
+.rrow .sev.high .d { background: var(--sev-high); }
+.rrow .sev.standard .d { background: var(--sev-standard); }
 .rrow:hover {
   border-color: color-mix(in srgb, var(--navy) 35%, var(--line));
 }
@@ -346,13 +392,14 @@ a {
   border: 1px solid var(--line);
 }
 .rrow .thumb img { width: 100%; height: 100%; object-fit: cover; }
-.rrow .thumb.tile { color: #fff; border: none; }
-.rrow .thumb.tile.food { background: var(--cat-food); }
-.rrow .thumb.tile.medicine { background: var(--cat-med); }
-.rrow .thumb.tile.kids { background: var(--cat-kids); }
-.rrow .thumb.tile.vehicles { background: var(--cat-veh); }
-.rrow .thumb.tile.household { background: var(--cat-house); }
-.rrow .thumb.tile.other { background: var(--cat-other); }
+/* soft-tinted tiles (not saturated squares) when there's no product photo */
+.rrow .thumb.tile { border: 1px solid var(--line-2); }
+.rrow .thumb.tile.food { background: color-mix(in srgb, var(--cat-food) 13%, #fff); color: var(--cat-food); }
+.rrow .thumb.tile.medicine { background: color-mix(in srgb, var(--cat-med) 13%, #fff); color: var(--cat-med); }
+.rrow .thumb.tile.kids { background: color-mix(in srgb, var(--cat-kids) 14%, #fff); color: var(--cat-kids); }
+.rrow .thumb.tile.vehicles { background: color-mix(in srgb, var(--cat-veh) 13%, #fff); color: var(--cat-veh); }
+.rrow .thumb.tile.household { background: color-mix(in srgb, var(--cat-house) 13%, #fff); color: var(--cat-house); }
+.rrow .thumb.tile.other { background: color-mix(in srgb, var(--cat-other) 13%, #fff); color: var(--cat-other); }
 .rrow .thumb.tile svg { width: 40%; height: 40%; }
 .rrow .thumb > svg { width: 38%; height: 38%; color: var(--muted); opacity: 0.7; }
 .rrow .rbody { min-width: 0; flex: 1; }
@@ -381,12 +428,12 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--risk-fg);
-  font-size: 0.84rem;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.83rem;
+  font-weight: 500;
   min-width: 0;
 }
-.rrow .atrisk svg { width: 13px; height: 13px; flex: none; }
+.rrow .atrisk svg { width: 13px; height: 13px; flex: none; color: var(--risk-fg); }
 .rrow .atrisk span {
   overflow: hidden;
   text-overflow: ellipsis;
