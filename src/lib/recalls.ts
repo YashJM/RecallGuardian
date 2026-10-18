@@ -114,15 +114,21 @@ const FOOD_WORDS = [
   "alcoholic",
   "beverage",
 ];
+// Consumer health products — things in a household medicine cabinet.
 const MED_WORDS = [
   "drug",
   "natural health",
-  "medical device",
   "biologic",
   "vaccine",
   "veterinary",
-  "radiopharm",
   "homeopathic",
+  "health product",
+];
+
+// Professional / clinical medical devices — mostly hospital equipment, not
+// household items. De-prioritized so they don't flood a consumer feed.
+const DEVICE_WORDS = [
+  "medical device",
   "cardiovascular",
   "anaesthesiology",
   "orthopaedic",
@@ -140,8 +146,14 @@ const MED_WORDS = [
   "gastroenterology",
   "obstetrics",
   "gynaecology",
-  "health product",
+  "radiopharm",
+  "general hospital",
+  "personal use",
 ];
+
+function isDevice(cat: string, org: string): boolean {
+  return org.toLowerCase().includes("medical devices") || has(cat.toLowerCase(), DEVICE_WORDS);
+}
 const VEHICLE_WORDS = [
   "car",
   "suv",
@@ -193,9 +205,10 @@ function classifyGroup(cat: string, org: string): Group {
   // Kids first — a child car seat is a Transport Canada recall but belongs here.
   if (has(c, KID_WORDS)) return "kids";
   if (o === "cfia" || has(c, FOOD_WORDS)) return "food";
+  // Professional medical devices are not household items — bucket as "other".
+  if (isDevice(cat, org)) return "other";
   if (
     has(c, MED_WORDS) ||
-    o.includes("medical devices") ||
     o.includes("drugs and health") ||
     o.includes("marketed health")
   )
@@ -230,6 +243,8 @@ const HIGH_WORDS = [
 ];
 
 function classifyTier(cat: string, org: string, group: Group): Tier {
+  // Professional medical devices: real, but low day-to-day household relevance.
+  if (isDevice(cat, org)) return "standard";
   if (group === "food" || group === "medicine" || group === "kids")
     return "critical";
   const c = cat.toLowerCase();
@@ -347,4 +362,114 @@ export async function getRelated(recall: Recall, n = 4): Promise<Recall[]> {
   return all
     .filter((r) => r.nid !== recall.nid && r.group === recall.group)
     .slice(0, n);
+}
+
+// ---------------------------------------------------------------------------
+// Value-adds over the official site: who's at risk, numbered steps, and the
+// product photo + provincial distribution parsed from the official notice.
+// ---------------------------------------------------------------------------
+
+const ALLERGENS = [
+  "peanut", "tree nut", "almond", "cashew", "walnut", "hazelnut", "pecan",
+  "milk", "egg", "wheat", "gluten", "soy", "mustard", "sesame", "sulphite",
+  "sulfite", "fish", "shellfish", "crustacean",
+];
+
+/** Named groups most at risk, by hazard — written per hazard type, not per recall. */
+export function whoAtRisk(r: Recall): string | null {
+  const t = `${r.issue} ${r.title}`.toLowerCase();
+  if (t.includes("listeria"))
+    return "Pregnant people, newborns, adults 65+, and people with weakened immune systems";
+  if (t.includes("salmonella") || t.includes("e. coli") || t.includes("e.coli") || t.includes("botulism"))
+    return "Young children, older adults, pregnant people, and people with weakened immune systems";
+  if (t.includes("undeclared") || t.includes("allergen") || t.includes("allergy")) {
+    const found = ALLERGENS.find((a) => t.includes(a));
+    const name = found === "sulfite" ? "sulphite" : found;
+    return name
+      ? `People with a ${name} allergy or sensitivity`
+      : "People with the relevant food allergy or sensitivity";
+  }
+  if (t.includes("choking")) return "Babies and young children";
+  if (r.group === "kids" || t.includes("car seat") || t.includes("infant"))
+    return "Babies and young children";
+  return null;
+}
+
+/** Break the official "what you should do" text into ordered steps. */
+export function recallSteps(r: Recall): string[] {
+  if (!r.whatToDo) return [];
+  return r.whatToDo
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 3)
+    .slice(0, 5);
+}
+
+const PROVINCE_CODES: [RegExp, string][] = [
+  [/\bAlberta\b/i, "AB"],
+  [/\bBritish Columbia\b/i, "BC"],
+  [/\bManitoba\b/i, "MB"],
+  [/\bNew Brunswick\b/i, "NB"],
+  [/\bNewfoundland(?: and Labrador)?\b/i, "NL"],
+  [/\bNova Scotia\b/i, "NS"],
+  [/\bOntario\b/i, "ON"],
+  [/\bPrince Edward Island\b/i, "PE"],
+  [/\bQu(?:e|é)bec\b/i, "QC"],
+  [/\bSaskatchewan\b/i, "SK"],
+  [/\bNorthwest Territories\b/i, "NT"],
+  [/\bNunavut\b/i, "NU"],
+  [/\bYukon\b/i, "YT"],
+];
+
+export interface RecallExtras {
+  imageUrl: string | null;
+  distribution: string; // e.g. "AB, BC, ON" or "Canada (national)" or ""
+}
+
+const extrasCache = new Map<string, RecallExtras>();
+
+/**
+ * Fetch one official notice page and pull out the product image and the
+ * provinces it was distributed in. Best-effort and defensive: any failure
+ * falls back to no image / no distribution. Called only on the recall detail
+ * page (one fetch per page, cached), never across the whole feed.
+ */
+export async function getRecallExtras(r: Recall): Promise<RecallExtras> {
+  if (extrasCache.has(r.nid)) return extrasCache.get(r.nid)!;
+  const fallback: RecallExtras = { imageUrl: null, distribution: "" };
+  if (!r.sourceUrl) return fallback;
+  try {
+    const res = await fetch(r.sourceUrl, {
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      extrasCache.set(r.nid, fallback);
+      return fallback;
+    }
+    const html = await res.text();
+
+    const img = html.match(
+      /(?:data-src|src)="(\/sites\/default\/files\/styles\/[^"]+\.(?:png|jpe?g|webp)[^"]*)"/i
+    );
+    const imageUrl = img
+      ? "https://recalls-rappels.canada.ca" + img[1].replace(/&amp;/g, "&")
+      : null;
+
+    const codes = [
+      ...new Set(PROVINCE_CODES.filter(([re]) => re.test(html)).map(([, c]) => c)),
+    ];
+    let distribution = "";
+    // 1–6 named provinces reads as a real distribution list; more than that (or
+    // an explicit "national") is almost certainly a nationwide recall.
+    if (codes.length >= 1 && codes.length <= 6) distribution = codes.join(", ");
+    else if (/\bnational(?:ly)?\b/i.test(html)) distribution = "Canada (national)";
+
+    const out: RecallExtras = { imageUrl, distribution };
+    extrasCache.set(r.nid, out);
+    return out;
+  } catch {
+    extrasCache.set(r.nid, fallback);
+    return fallback;
+  }
 }

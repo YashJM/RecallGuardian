@@ -31,15 +31,12 @@ export default async function Home() {
   return (
     <main className="wrap">
       <div className="page-head">
-        <span className="eyebrow">
-          <span className="dot" />
-          <span className="u">Updated daily · CFIA · Health Canada · Transport Canada</span>
-        </span>
+        <span className="u">Updated daily · CFIA · Health Canada · Transport Canada</span>
         <h1>Canada&rsquo;s recalls, ranked</h1>
         <p className="sub">
           Every Canadian safety recall in one place, ordered by how much it
-          matters to a household — food and medicine first. Tap any recall for
-          the official Government of Canada notice.
+          matters to a household &mdash; food and medicine first. Each one opens
+          to plain-language steps, who&rsquo;s at risk, and the official notice.
         </p>
         {newest && (
           <p className="synced mono">Data current to {formatDay(newest)}</p>

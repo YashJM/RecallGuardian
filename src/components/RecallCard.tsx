@@ -1,33 +1,42 @@
 import Link from "next/link";
 import type { Recall } from "@/lib/recalls";
+import { CatGlyph, Medallion } from "./icons";
 
 const TIER_LABEL = { critical: "Critical", high: "High", standard: "Standard" };
 
-function formatDate(d: string): string {
-  if (!d) return "";
-  const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return d;
-  return date.toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
+/**
+ * Scan-style feed card: photo-led with a severity tag in the corner. The feed
+ * uses the category tile as the image (fast, no per-item fetch); the real
+ * product photo appears on the recall's own page.
+ */
 export default function RecallCard({ r }: { r: Recall }) {
+  const hazard = r.issue || r.product || r.category;
   return (
-    <Link className={`rc ${r.tier}`} href={`/recall/${r.slug}`}>
-      <span className="stripe" aria-hidden="true" />
-      <div className="pad">
-        <div className="meta">
-          <span className={`pill ${r.tier}`}>{TIER_LABEL[r.tier]}</span>
-          <span className="cat">{r.category}</span>
-          {r.lastUpdated && <span className="date">{formatDate(r.lastUpdated)}</span>}
-        </div>
+    <Link className="rcard" href={`/recall/${r.slug}`}>
+      <div className={`photo tile ${r.group}`}>
+        <CatGlyph group={r.group} />
+        <span className="corner">
+          <span className={`prio ${r.tier}`}>{TIER_LABEL[r.tier]}</span>
+        </span>
+      </div>
+      <div className="b">
         <h3>{r.title}</h3>
-        {(r.issue || r.product) && (
-          <p className="issue">{r.issue || r.product}</p>
-        )}
+        <div className="foot">
+          <Medallion group={r.group} sm />
+          <span className="metaline" style={{ minWidth: 0 }}>
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                display: "block",
+                maxWidth: "15ch",
+              }}
+            >
+              {hazard}
+            </span>
+          </span>
+        </div>
       </div>
     </Link>
   );
