@@ -98,6 +98,10 @@ export default function RootLayout({
               ranks, illustrates and rewords these notices in plain language;
               always confirm details with the official notice.
             </p>
+            <div className="links">
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/support">Support</Link>
+            </div>
           </div>
         </footer>
       </body>
