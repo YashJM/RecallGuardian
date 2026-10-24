@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "RecallGuardian — Canada's recalls, ranked",
     description:
       "Every Canadian safety recall in one ranked, plain-language feed.",
