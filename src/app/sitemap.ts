@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getRecalls } from "@/lib/recalls";
+import { HUBS } from "@/lib/hubs";
 
 const BASE = "https://recallguardian.ca";
 
@@ -14,6 +15,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: r.tier === "critical" ? 0.8 : r.tier === "high" ? 0.6 : 0.4,
   }));
 
+  // Category hub landing pages — high priority, change often.
+  const hubs = HUBS.map((h) => ({
+    url: `${BASE}/${h.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.9,
+  }));
+
   return [
     {
       url: BASE,
@@ -21,6 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 1,
     },
+    ...hubs,
     ...recalls,
   ];
 }

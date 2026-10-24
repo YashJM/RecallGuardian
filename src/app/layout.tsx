@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Public_Sans, Noto_Serif, Libre_Franklin } from "next/font/google";
 import Link from "next/link";
+import { HUBS } from "@/lib/hubs";
 import "./globals.css";
 
 const sans = Public_Sans({
@@ -98,6 +99,15 @@ export default function RootLayout({
               ranks, illustrates and rewords these notices in plain language;
               always confirm details with the official notice.
             </p>
+            <nav className="footcats" aria-label="Browse recalls by category">
+              <span className="footcats-lbl">Browse recalls:</span>
+              <Link href="/">All</Link>
+              {HUBS.map((h) => (
+                <Link key={h.slug} href={`/${h.slug}`}>
+                  {h.label}
+                </Link>
+              ))}
+            </nav>
             <div className="links">
               <Link href="/privacy">Privacy</Link>
               <Link href="/support">Support</Link>

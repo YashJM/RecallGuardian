@@ -256,6 +256,36 @@ a {
 .fchip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
 .fchip .count { opacity: 0.6; font-variant-numeric: tabular-nums; }
 
+/* ---- category hub (landing-page) nav + footer ---- */
+.hubnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 22px;
+}
+.hubchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+}
+.hubchip:hover { border-color: var(--navy); }
+.hubchip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.hubfoot {
+  margin: 24px 0 36px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.hubfoot a { color: var(--brand); font-weight: 700; text-decoration: none; }
+.hubfoot a:hover { text-decoration: underline; }
+
 .block-h {
   display: flex;
   align-items: baseline;
@@ -761,7 +791,17 @@ footer {
   padding-block: 36px;
 }
 footer p { margin: 0; color: var(--muted); font-size: 0.84rem; }
-footer .links { margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; }
+footer .footcats {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+footer .footcats-lbl { color: var(--muted); font-size: 0.8rem; font-weight: 700; }
+footer .footcats a { color: var(--ink); font-weight: 600; font-size: 0.84rem; text-decoration: none; }
+footer .footcats a:hover { color: var(--brand); }
+footer .links { margin-top: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
 footer .links a { color: var(--brand); font-weight: 600; font-size: 0.84rem; text-decoration: none; }
 
 /* ---- legal / support pages ---- */
