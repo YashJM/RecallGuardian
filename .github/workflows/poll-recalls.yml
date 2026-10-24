@@ -13,7 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Hit the poll endpoint
+        env:
+          POLL_URL: ${{ secrets.POLL_URL }}
+          POLL_SECRET: ${{ secrets.POLL_SECRET }}
         run: |
+          if [ -z "$POLL_URL" ] || [ -z "$POLL_SECRET" ]; then
+            echo "POLL_URL / POLL_SECRET not configured yet — skipping."
+            exit 0
+          fi
           curl -fsS -m 90 -X POST \
-            -H "Authorization: Bearer ${{ secrets.POLL_SECRET }}" \
-            "${{ secrets.POLL_URL }}"
+            -H "Authorization: Bearer $POLL_SECRET" \
+            "$POLL_URL"
