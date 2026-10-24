@@ -796,10 +796,54 @@ footer .links a { color: var(--brand); font-weight: 600; font-size: 0.84rem; tex
   margin: 0 0 14px;
 }
 
+/* ---- tap feedback: register the press before the next page loads ---- */
+.rrow, .hero { transition: transform 0.12s ease, border-color 0.12s ease; }
+.rrow:active, .hero:active { transform: scale(0.988); border-color: color-mix(in srgb, var(--navy) 35%, var(--line)); }
+
+/* ---- loading skeleton (recall detail, shown during on-demand render) ---- */
+@keyframes sk-shimmer { to { background-position: -200% 0; } }
+.sk {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--paper-2) 25%,
+    color-mix(in srgb, var(--paper-3) 60%, var(--line)) 37%,
+    var(--paper-2) 63%
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.3s linear infinite;
+  border-radius: 6px;
+}
+.sk-back { width: 96px; height: 18px; border-radius: 6px; margin-bottom: 10px; }
+.sk-line { border-radius: 6px; }
+span.sk-line { display: block; }
+span.sk-line + span.sk-line { margin-top: 10px; }
+.detail.skeleton { pointer-events: none; }
+.sk-photo {
+  width: 160px;
+  max-width: 34vw;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  flex: none;
+}
+.sk-risk { height: 60px; border-radius: 12px; margin-top: 22px; }
+.sk-section {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.sk-note {
+  margin: 16px 2px 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  .sk { animation: none; }
 }
 @media (max-width: 560px) {
   .detail .lead { grid-template-columns: 1fr; }
   .detail .lead .photo { width: 120px; }
+  .sk-photo { width: 120px; }
 }
