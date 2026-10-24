@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { GROUPS, type Group, type Recall } from "@/lib/recalls";
-import RecallCard from "./RecallCard";
+import RecallCard, { RecallHero } from "./RecallCard";
 import { Medallion } from "./icons";
 
 type Item = Recall & { atRisk?: string | null; imageUrl?: string | null };
 
-// One-tap "is X recalled?" checks.
 const QUICK = ["Milk", "Eggs", "Cheese", "Peanut", "Wheat", "Beef", "Chicken", "Romaine"];
 
 export default function Feed({
@@ -20,21 +19,28 @@ export default function Feed({
   initial?: Group | "all";
 }) {
   const [active, setActive] = useState<Group | "all">(initial);
+  const [criticalOnly, setCriticalOnly] = useState(false);
+  const [withPhoto, setWithPhoto] = useState(false);
   const [query, setQuery] = useState("");
 
   const q = query.trim().toLowerCase();
   const searching = q.length > 0;
 
-  // A search looks across everything (ignores the category filter) — the point
-  // is a fast "is this recalled?" check. With no query, browse the category.
+  // Filters COMBINE: category + severity + photo + search, all together.
   const shown = recalls.filter((r) => {
-    if (searching) {
+    if (active !== "all" && r.group !== active) return false;
+    if (criticalOnly && r.tier !== "critical") return false;
+    if (withPhoto && !r.imageUrl) return false;
+    if (q) {
       return `${r.title} ${r.product} ${r.category} ${r.agency} ${r.issue}`
         .toLowerCase()
         .includes(q);
     }
-    return active === "all" || r.group === active;
+    return true;
   });
+
+  const hero = !searching ? shown[0] : undefined;
+  const rows = hero ? shown.slice(1) : shown;
 
   return (
     <>
@@ -43,7 +49,7 @@ export default function Feed({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Check any product, brand or ingredient — e.g. cheese, peanut, Honda"
+          placeholder="Product, brand or ingredient — e.g. cheese, peanut, Honda"
           aria-label="Search recalls"
         />
         <button type="submit">
@@ -69,38 +75,54 @@ export default function Feed({
         )}
       </div>
 
-      {!searching && (
-        <div className="filterbar" role="tablist" aria-label="Filter recalls by category">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={active === "all"}
-            className={`fchip ${active === "all" ? "on" : ""}`}
-            onClick={() => setActive("all")}
-          >
-            All<span className="count">{counts.all}</span>
-          </button>
-          {GROUPS.map((g) =>
-            counts[g.id] ? (
-              <button
-                key={g.id}
-                type="button"
-                role="tab"
-                aria-selected={active === g.id}
-                className={`fchip ${active === g.id ? "on" : ""}`}
-                onClick={() => setActive(g.id)}
-              >
-                <Medallion group={g.id} sm />
-                {g.label}
-                <span className="count">{counts[g.id]}</span>
-              </button>
-            ) : null
-          )}
-        </div>
-      )}
+      {/* Filters stay visible and combine with search. */}
+      <div className="filterbar" role="tablist" aria-label="Filter recalls">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={active === "all"}
+          className={`fchip ${active === "all" ? "on" : ""}`}
+          onClick={() => setActive("all")}
+        >
+          All<span className="count">{counts.all}</span>
+        </button>
+        {GROUPS.map((g) =>
+          counts[g.id] ? (
+            <button
+              key={g.id}
+              type="button"
+              role="tab"
+              aria-selected={active === g.id}
+              className={`fchip ${active === g.id ? "on" : ""}`}
+              onClick={() => setActive(g.id)}
+            >
+              <Medallion group={g.id} sm />
+              {g.label}
+              <span className="count">{counts[g.id]}</span>
+            </button>
+          ) : null
+        )}
+        <span className="fdivider" aria-hidden="true" />
+        <button
+          type="button"
+          className={`tchip ${criticalOnly ? "on" : ""}`}
+          aria-pressed={criticalOnly}
+          onClick={() => setCriticalOnly((v) => !v)}
+        >
+          Critical
+        </button>
+        <button
+          type="button"
+          className={`tchip ${withPhoto ? "on" : ""}`}
+          aria-pressed={withPhoto}
+          onClick={() => setWithPhoto((v) => !v)}
+        >
+          With photo
+        </button>
+      </div>
 
       {searching && (
-        <p className="block-h" style={{ marginTop: 18 }}>
+        <p className="block-h" style={{ marginTop: 16 }}>
           <span className="cnt" style={{ marginLeft: 0 }}>
             {shown.length} result{shown.length === 1 ? "" : "s"} for &ldquo;{query.trim()}&rdquo;
           </span>
@@ -111,14 +133,17 @@ export default function Feed({
         <p className="empty">
           {searching
             ? `No current recalls match “${query.trim()}”. That’s good news — but double-check the official site for older or archived recalls.`
-            : "No recalls in this category right now."}
+            : "Nothing matches these filters."}
         </p>
       ) : (
-        <div className="feed">
-          {shown.map((r) => (
-            <RecallCard key={r.nid} r={r} />
-          ))}
-        </div>
+        <>
+          {hero && <RecallHero r={hero} />}
+          <div className="feed">
+            {rows.map((r) => (
+              <RecallCard key={r.nid} r={r} />
+            ))}
+          </div>
+        </>
       )}
     </>
   );

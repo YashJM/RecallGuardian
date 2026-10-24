@@ -425,7 +425,7 @@ a {
   margin: 0 0 7px;
 }
 .rrow .atrisk {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
   color: var(--ink);
@@ -435,6 +435,8 @@ a {
 }
 .rrow .atrisk svg { width: 13px; height: 13px; flex: none; color: var(--risk-fg); }
 .rrow .atrisk span {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -447,6 +449,116 @@ a {
   white-space: nowrap;
   display: block;
 }
+
+/* ---- severity + photo toggles (combine with category + search) ---- */
+.fdivider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+  margin: 3px 2px;
+  flex: none;
+}
+.tchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+  background: var(--paper);
+  color: var(--brand);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tchip:hover { border-color: var(--brand); }
+.tchip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* ---- Showcase hero: big product photo for the most urgent recall ---- */
+.hero {
+  display: block;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow);
+  margin-bottom: 14px;
+}
+.hero:hover { border-color: color-mix(in srgb, var(--navy) 30%, var(--line)); }
+.hero-img {
+  position: relative;
+  aspect-ratio: 16 / 7;
+  overflow: hidden;
+  background: linear-gradient(140deg, var(--paper-3), var(--paper-2));
+}
+.hero-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero-img .tile { position: absolute; inset: 0; display: grid; place-items: center; }
+.hero-img .tile.food { background: color-mix(in srgb, var(--cat-food) 13%, #fff); color: var(--cat-food); }
+.hero-img .tile.medicine { background: color-mix(in srgb, var(--cat-med) 13%, #fff); color: var(--cat-med); }
+.hero-img .tile.kids { background: color-mix(in srgb, var(--cat-kids) 14%, #fff); color: var(--cat-kids); }
+.hero-img .tile.vehicles { background: color-mix(in srgb, var(--cat-veh) 13%, #fff); color: var(--cat-veh); }
+.hero-img .tile.household { background: color-mix(in srgb, var(--cat-house) 13%, #fff); color: var(--cat-house); }
+.hero-img .tile.other { background: color-mix(in srgb, var(--cat-other) 13%, #fff); color: var(--cat-other); }
+.hero-img .tile svg { width: 76px; height: 76px; }
+.hero-img .sev.solid {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  padding: 5px 11px;
+  box-shadow: 0 1px 3px rgba(20, 39, 59, 0.12);
+}
+.hero-img .sev.solid .d { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.hero-img .sev.solid.critical .d { background: var(--sev-critical); }
+.hero-img .sev.solid.high .d { background: var(--sev-high); }
+.hero-img .sev.solid.standard .d { background: var(--sev-standard); }
+.hero-meta {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 5px 11px;
+  box-shadow: 0 1px 3px rgba(20, 39, 59, 0.12);
+}
+.hero-body { padding: 16px 18px; }
+.hero-body h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 0 0 9px;
+  color: var(--ink);
+}
+.hero .atrisk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 500;
+  min-width: 0;
+}
+.hero .atrisk svg { width: 14px; height: 14px; flex: none; color: var(--risk-fg); }
+.hero .atrisk span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- (legacy Scan tile card, no longer used on the feed) ---- */
 .rcard {

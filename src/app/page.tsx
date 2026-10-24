@@ -1,8 +1,10 @@
 import { getRecalls, GROUPS, whoAtRisk, getRecallExtras } from "@/lib/recalls";
 import Feed from "@/components/Feed";
 
-// How many of the default (food) items to fetch real product photos for.
-const PHOTO_ENRICH = 40;
+// How many top items to fetch real product photos for (drives the photo nudge).
+const PHOTO_ENRICH = 30;
+
+const TIER_RANK: Record<string, number> = { critical: 0, high: 1, standard: 2 };
 
 // Rebuild the homepage from fresh feed data hourly.
 export const revalidate = 3600;
@@ -27,8 +29,8 @@ export default async function Home() {
     ""
   );
 
-  // Fetch real product photos for the top food items (the default view).
-  const toEnrich = base.filter((r) => r.group === "food").slice(0, PHOTO_ENRICH);
+  // Fetch real product photos for the top slice.
+  const toEnrich = base.slice(0, PHOTO_ENRICH);
   const photos = new Map(
     await Promise.all(
       toEnrich.map(
@@ -37,7 +39,22 @@ export default async function Home() {
     )
   );
 
-  const active = base.map((r) => ({
+  // Protection-first, with a within-tier nudge for recalls that have a photo
+  // (a photo can never lift a lower tier above a higher one).
+  const ranked = base
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      const ta = TIER_RANK[a.r.tier] ?? 9;
+      const tb = TIER_RANK[b.r.tier] ?? 9;
+      if (ta !== tb) return ta - tb;
+      const pa = photos.get(a.r.nid) ? 0 : 1;
+      const pb = photos.get(b.r.nid) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      return a.i - b.i;
+    })
+    .map((x) => x.r);
+
+  const active = ranked.map((r) => ({
     ...r,
     atRisk: whoAtRisk(r),
     imageUrl: photos.get(r.nid) ?? null,
