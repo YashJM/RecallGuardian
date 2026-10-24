@@ -1,0 +1,19 @@
+name: Poll recalls for new alerts
+
+# Triggers the push poller on a schedule. GitHub's scheduler aims for the given
+# cadence but can be delayed several minutes under load — fine for alerts that
+# only need to land within a few minutes of the government publishing.
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every ~10 minutes
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit the poll endpoint
+        run: |
+          curl -fsS -m 90 -X POST \
+            -H "Authorization: Bearer ${{ secrets.POLL_SECRET }}" \
+            "${{ secrets.POLL_URL }}"
