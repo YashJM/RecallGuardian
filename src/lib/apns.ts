@@ -51,9 +51,14 @@ export interface PushMessage {
   token: string;
   title: string;
   body: string;
-  nid: string;
-  slug: string;
+  // Present for a single-recall alert; omitted for a digest (opens the feed).
+  nid?: string;
+  slug?: string;
 }
+
+// All recall alerts share one thread so they stack in Notification Center
+// instead of scattering.
+const THREAD_ID = "recall-alerts";
 
 export interface PushResult {
   sent: number;
@@ -84,10 +89,10 @@ export async function sendPushes(messages: PushMessage[]): Promise<PushResult> {
               aps: {
                 alert: { title: m.title, body: m.body },
                 sound: "default",
-                "thread-id": m.nid,
+                "thread-id": THREAD_ID,
               },
-              nid: m.nid,
-              slug: m.slug,
+              ...(m.nid ? { nid: m.nid } : {}),
+              ...(m.slug ? { slug: m.slug } : {}),
             });
             const req = session.request({
               ":method": "POST",

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRecalls, type Recall } from "@/lib/recalls";
+import { fetchRecallsConditional, type Recall, type FeedValidators } from "@/lib/recalls";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendPushes, type PushMessage } from "@/lib/apns";
 
@@ -10,8 +10,12 @@ export const maxDuration = 60;
 // Only recalls updated within this window are eligible to notify, so a feed
 // reorder or a late backfill can never fire a burst of stale alerts.
 const RECENCY_DAYS = 14;
+// Per-device: at or above this many new recalls in one run, send ONE digest
+// instead of a flood of individual notifications.
+const DIGEST_THRESHOLD = 3;
 // Hard safety cap on pushes per run.
 const MAX_PUSHES = 2000;
+const FEED_META_KEY = "feed_meta";
 
 const GROUP_LABEL: Record<string, string> = {
   food: "food",
@@ -32,9 +36,31 @@ function authorized(req: Request): boolean {
   return bearer === secret || url.searchParams.get("secret") === secret;
 }
 
+/** "3 food, 1 vehicle" from a list of new recalls. */
+function summarize(recalls: Recall[]): string {
+  const counts = new Map<string, number>();
+  for (const r of recalls) counts.set(r.group, (counts.get(r.group) ?? 0) + 1);
+  return [...counts.entries()]
+    .map(([g, n]) => `${n} ${GROUP_LABEL[g] ?? g}${n === 1 ? "" : "s"}`)
+    .join(", ");
+}
+
 async function run() {
   const db = supabaseAdmin();
-  const all = await getRecalls();
+
+  // Cheap conditional fetch: a 304 means nothing changed since last poll.
+  const { data: metaRow } = await db.from("kv").select("value").eq("key", FEED_META_KEY).maybeSingle();
+  const prev = (metaRow?.value as FeedValidators) ?? undefined;
+  const feed = await fetchRecallsConditional(prev);
+  if (!feed.changed || !feed.recalls) return { unchanged: true };
+
+  await db.from("kv").upsert({
+    key: FEED_META_KEY,
+    value: { etag: feed.etag, lastModified: feed.lastModified },
+    updated_at: new Date().toISOString(),
+  });
+
+  const all = feed.recalls;
   const live = all.filter((r) => !r.archived && r.group !== "other");
 
   // First run ever: adopt everything as "already seen" and notify nobody.
@@ -65,7 +91,7 @@ async function run() {
   // Always record new NIDs as seen (even unnotified) so we never reconsider them.
   const toMarkSeen = live.filter((r) => !seen.has(r.nid)).map((r) => ({ nid: r.nid }));
 
-  let result = { sent: 0, failed: 0, pruned: 0 };
+  let result = { sent: 0, failed: 0, pruned: 0, digests: 0 };
   if (newRecalls.length > 0) {
     const { data: devices } = await db
       .from("devices")
@@ -76,24 +102,36 @@ async function run() {
     for (const d of devices ?? []) {
       const cats = new Set((d.categories as string[]) ?? []);
       const tMax = THRESHOLD_MAX[(d.threshold as string) ?? "all"] ?? 2;
-      for (const r of newRecalls) {
-        if (!cats.has(r.group)) continue;
-        if ((TIER_RANK[r.tier] ?? 2) > tMax) continue;
+      const matched = newRecalls.filter(
+        (r) => cats.has(r.group) && (TIER_RANK[r.tier] ?? 2) <= tMax
+      );
+      if (matched.length === 0) continue;
+
+      if (matched.length >= DIGEST_THRESHOLD) {
+        // One digest instead of a flood.
         messages.push({
           token: d.token as string,
-          title: `New ${GROUP_LABEL[r.group] ?? ""} recall`.replace(/\s+/g, " ").trim(),
-          body: r.title,
-          nid: r.nid,
-          slug: r.slug,
+          title: `${matched.length} new recalls`,
+          body: `${summarize(matched)} — tap to review.`,
         });
-        if (messages.length >= MAX_PUSHES) break;
+        result.digests++;
+      } else {
+        for (const r of matched) {
+          messages.push({
+            token: d.token as string,
+            title: `New ${GROUP_LABEL[r.group] ?? ""} recall`.replace(/\s+/g, " ").trim(),
+            body: r.title,
+            nid: r.nid,
+            slug: r.slug,
+          });
+        }
       }
       if (messages.length >= MAX_PUSHES) break;
     }
 
     if (messages.length > 0) {
       const push = await sendPushes(messages);
-      result = { sent: push.sent, failed: push.failed, pruned: push.deadTokens.length };
+      result = { ...result, sent: push.sent, failed: push.failed, pruned: push.deadTokens.length };
       if (push.deadTokens.length > 0) {
         await db.from("devices").delete().in("token", push.deadTokens);
       }

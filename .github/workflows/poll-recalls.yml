@@ -5,7 +5,8 @@ name: Poll recalls for new alerts
 # only need to land within a few minutes of the government publishing.
 on:
   schedule:
-    - cron: "*/10 * * * *" # every ~10 minutes
+    - cron: "*/5 * * * *" # every ~5 minutes (the poll is a cheap conditional
+      # request — a 304 when nothing changed — so this is near-free)
   workflow_dispatch: {} # allow manual runs from the Actions tab
 
 jobs:

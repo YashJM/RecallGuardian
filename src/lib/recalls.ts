@@ -337,6 +337,12 @@ function normalize(r: RawRecall): Recall {
 let memo: { data: Recall[]; ts: number } | null = null;
 const TTL_MS = 60 * 60 * 1000; // 1h — the gov bulk file updates ~daily, so this is plenty fresh
 
+function parseAndSort(raw: RawRecall[]): Recall[] {
+  return raw
+    .map(normalize)
+    .sort((a, b) => b.score - a.score || b.lastUpdated.localeCompare(a.lastUpdated));
+}
+
 export async function getRecalls(): Promise<Recall[]> {
   if (memo && Date.now() - memo.ts < TTL_MS) return memo.data;
   const res = await fetch(FEED_URL, { cache: "no-store" });
@@ -344,12 +350,45 @@ export async function getRecalls(): Promise<Recall[]> {
     if (memo) return memo.data; // serve stale rather than nothing
     throw new Error(`Recalls feed returned ${res.status}`);
   }
-  const raw = (await res.json()) as RawRecall[];
-  const data = raw
-    .map(normalize)
-    .sort((a, b) => b.score - a.score || b.lastUpdated.localeCompare(a.lastUpdated));
+  const data = parseAndSort((await res.json()) as RawRecall[]);
   memo = { data, ts: Date.now() };
   return data;
+}
+
+export interface FeedValidators {
+  etag?: string;
+  lastModified?: string;
+}
+
+export interface ConditionalFeed extends FeedValidators {
+  recalls: Recall[] | null; // null when unchanged (304)
+  changed: boolean;
+}
+
+/**
+ * Fresh conditional fetch for the push poller — bypasses the 1h website memo
+ * and uses ETag / Last-Modified so an unchanged feed returns a cheap 304
+ * instead of re-downloading ~15MB. Pass the validators from the last run.
+ */
+export async function fetchRecallsConditional(prev?: FeedValidators): Promise<ConditionalFeed> {
+  const headers: Record<string, string> = {};
+  if (prev?.etag) headers["If-None-Match"] = prev.etag;
+  if (prev?.lastModified) headers["If-Modified-Since"] = prev.lastModified;
+
+  const res = await fetch(FEED_URL, { cache: "no-store", headers });
+  if (res.status === 304) {
+    return { changed: false, recalls: null, etag: prev?.etag, lastModified: prev?.lastModified };
+  }
+  if (!res.ok) throw new Error(`Recalls feed returned ${res.status}`);
+
+  const data = parseAndSort((await res.json()) as RawRecall[]);
+  memo = { data, ts: Date.now() }; // keep the website memo warm too
+  return {
+    changed: true,
+    recalls: data,
+    etag: res.headers.get("etag") ?? undefined,
+    lastModified: res.headers.get("last-modified") ?? undefined,
+  };
 }
 
 export async function getRecallByNid(nid: string): Promise<Recall | undefined> {
