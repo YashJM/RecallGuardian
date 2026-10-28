@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Support",
@@ -91,7 +92,7 @@ export default function SupportPage() {
       <h2>Privacy</h2>
       <p>
         RecallGuardian collects nothing about you. Read the full{" "}
-        <a href="/privacy">Privacy Policy</a>.
+        <Link href="/privacy">Privacy Policy</Link>.
       </p>
     </main>
   );
