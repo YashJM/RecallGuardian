@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
-import { Public_Sans, Noto_Serif, Libre_Franklin } from "next/font/google";
+import localFont from "next/font/local";
 import Link from "next/link";
 import { HUBS } from "@/lib/hubs";
 import "./globals.css";
 
-const sans = Public_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+// Self-hosted variable fonts (latin). Served from the repo so the build has no
+// runtime dependency on Google Fonts — next/font/google was intermittently
+// failing the Vercel build ("An error occurred in next/font").
+const sans = localFont({
+  src: "./fonts/publicsans.woff2",
+  weight: "400 800",
   variable: "--font-sans",
   display: "swap",
 });
-const serif = Noto_Serif({
-  subsets: ["latin"],
-  weight: ["600", "700"],
+const serif = localFont({
+  src: "./fonts/notoserif.woff2",
+  weight: "400 700",
   variable: "--font-serif",
   display: "swap",
 });
-const alt = Libre_Franklin({
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
+const alt = localFont({
+  src: "./fonts/librefranklin.woff2",
+  weight: "400 800",
   variable: "--font-alt",
   display: "swap",
 });
