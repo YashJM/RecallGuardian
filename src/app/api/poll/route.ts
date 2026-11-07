@@ -113,6 +113,7 @@ async function run() {
           token: d.token as string,
           title: `${matched.length} new recalls`,
           body: `${summarize(matched)} — tap to review.`,
+          digest: true,
         });
         result.digests++;
       } else {

@@ -14,9 +14,12 @@ import { supabaseAdmin } from "./supabase";
 const JWT_CACHE_KEY = "apns_jwt";
 const JWT_MAX_AGE_MS = 50 * 60 * 1000;
 
-function host(): string {
+export type ApnsEnv = "production" | "sandbox";
+
+function host(env?: ApnsEnv): string {
   // TestFlight + App Store builds use production; a dev build's token is sandbox.
-  return process.env.APNS_ENV === "sandbox"
+  const target = env ?? (process.env.APNS_ENV === "sandbox" ? "sandbox" : "production");
+  return target === "sandbox"
     ? "https://api.sandbox.push.apple.com"
     : "https://api.push.apple.com";
 }
@@ -54,6 +57,8 @@ export interface PushMessage {
   // Present for a single-recall alert; omitted for a digest (opens the feed).
   nid?: string;
   slug?: string;
+  // Marks an "N new recalls" summary so the app opens the feed on tap.
+  digest?: boolean;
 }
 
 // All recall alerts share one thread so they stack in Notification Center
@@ -64,16 +69,20 @@ export interface PushResult {
   sent: number;
   failed: number;
   deadTokens: string[]; // tokens Apple says are invalid/unregistered — prune these
+  errors: { token: string; status: number; reason: string }[];
 }
 
-/** Send a batch of notifications over one HTTP/2 connection. */
-export async function sendPushes(messages: PushMessage[]): Promise<PushResult> {
-  const result: PushResult = { sent: 0, failed: 0, deadTokens: [] };
+/**
+ * Send a batch of notifications over one HTTP/2 connection. `env` overrides
+ * APNS_ENV (used by the push-test endpoint to try both environments).
+ */
+export async function sendPushes(messages: PushMessage[], env?: ApnsEnv): Promise<PushResult> {
+  const result: PushResult = { sent: 0, failed: 0, deadTokens: [], errors: [] };
   if (messages.length === 0) return result;
 
   const jwt = await providerToken();
   const topic = must("APNS_BUNDLE_ID");
-  const session = http2.connect(host());
+  const session = http2.connect(host(env));
 
   const done = new Promise<void>((resolve, reject) => {
     session.on("error", reject);
@@ -93,6 +102,7 @@ export async function sendPushes(messages: PushMessage[]): Promise<PushResult> {
               },
               ...(m.nid ? { nid: m.nid } : {}),
               ...(m.slug ? { slug: m.slug } : {}),
+              ...(m.digest ? { digest: true } : {}),
             });
             const req = session.request({
               ":method": "POST",
@@ -115,13 +125,18 @@ export async function sendPushes(messages: PushMessage[]): Promise<PushResult> {
                 result.failed++;
                 // 410 Unregistered, or 400 BadDeviceToken -> token is dead.
                 const reason = (() => { try { return JSON.parse(data).reason; } catch { return ""; } })();
+                result.errors.push({ token: m.token, status, reason });
                 if (status === 410 || reason === "BadDeviceToken" || reason === "Unregistered") {
                   result.deadTokens.push(m.token);
                 }
               }
               resolve();
             });
-            req.on("error", () => { result.failed++; resolve(); });
+            req.on("error", (e) => {
+              result.failed++;
+              result.errors.push({ token: m.token, status: 0, reason: e.message });
+              resolve();
+            });
             req.end(payload);
           })
       )
