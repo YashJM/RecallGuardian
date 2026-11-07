@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "RecallGuardian collects nothing about you. No account, no tracking; your watchlist and all recall matching stay on your device.",
+    "RecallGuardian has no accounts and no tracking. Your watchlist stays on your device; if you turn on recall alerts, we store only an anonymous push token and the categories you follow.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -11,33 +11,52 @@ export default function PrivacyPage() {
   return (
     <main className="wrap legal">
       <h1>Privacy Policy</h1>
-      <p className="updated">Last updated: October 22, 2026</p>
+      <p className="updated">Last updated: November 7, 2026</p>
 
       <p>
-        RecallGuardian is built to be private. We do not have accounts, we do not
-        track you, and we do not run a server that stores anything about you.
-      </p>
-
-      <h2>What we collect</h2>
-      <p>
-        <strong>Nothing about you.</strong> RecallGuardian has no account or
-        login, no analytics, no advertising, and no tracking. We do not collect,
-        sell, or share personal information.
+        RecallGuardian is built to be private. There are no accounts, no
+        analytics, no advertising, and no tracking. We do not collect your name,
+        email, location, or contacts, and we never sell or share personal
+        information.
       </p>
 
       <h2>What stays on your device</h2>
       <p>
-        Your watchlist (the brands, products, and categories you choose to watch)
-        and your alert settings are stored only on your device. They are never
-        uploaded to us or anyone else. New recalls are matched against your
-        watchlist on your phone.
+        Your watchlist (the brands and products you choose to watch) and your
+        alert settings are stored on your device. The brands and products you
+        watch are never uploaded. Matches against your brand watchlist are found
+        on your phone.
       </p>
 
-      <h2>Network requests the app makes</h2>
+      <h2>What we store if you turn on recall alerts</h2>
       <p>
-        To do its job, the app contacts two public services. Neither receives
-        anything that identifies you.
+        Recall alerts are optional. If you turn them on, the app sends our server
+        three things so we can notify you when a new recall is published:
       </p>
+      <ul>
+        <li>
+          <strong>A push notification token</strong> issued by Apple. It lets us
+          deliver a notification to your device. It is not your Apple ID, phone
+          number, or any other personal identifier, and we don&rsquo;t link it to
+          who you are.
+        </li>
+        <li>
+          <strong>The recall categories you follow</strong> (for example, Food or
+          Baby &amp; kids).
+        </li>
+        <li>
+          <strong>Your severity setting</strong> (critical only, high and
+          critical, or everything).
+        </li>
+      </ul>
+      <p>
+        We use this only to send you recall alerts. Turning alerts off in the
+        app deletes it from our server. If you delete the app, Apple invalidates
+        the token and we remove it automatically the next time an alert would be
+        sent.
+      </p>
+
+      <h2>Services we use</h2>
       <ul>
         <li>
           <strong>Government of Canada — Recalls and Safety Alerts</strong>{" "}
@@ -50,13 +69,22 @@ export default function PrivacyPage() {
           to look up the product&rsquo;s name. The barcode is not linked to you,
           and nothing else is sent.
         </li>
+        <li>
+          <strong>Apple Push Notification service</strong>: delivers recall
+          alerts to your device if you turn them on.
+        </li>
+        <li>
+          <strong>Vercel and Supabase</strong>: host this website and the small
+          server that stores the alert information described above.
+        </li>
       </ul>
 
       <h2>Permissions</h2>
       <ul>
         <li>
           <strong>Notifications</strong> (optional): used only to alert you about
-          recalls that match your own watchlist.
+          new recalls in the categories you follow and matches with your own
+          watchlist.
         </li>
         <li>
           <strong>Camera</strong> (optional): used only for barcode scanning to add
@@ -67,7 +95,8 @@ export default function PrivacyPage() {
 
       <h2>Children</h2>
       <p>
-        RecallGuardian does not collect data from anyone, including children.
+        RecallGuardian does not knowingly collect personal information from
+        anyone, including children.
       </p>
 
       <h2>Data source &amp; disclaimer</h2>
@@ -89,7 +118,7 @@ export default function PrivacyPage() {
 
       <h2>Contact</h2>
       <p>
-        Questions? Email{" "}
+        Questions, or want your data deleted? Email{" "}
         <a href="mailto:privacy@recallguardian.ca">privacy@recallguardian.ca</a>.
       </p>
     </main>

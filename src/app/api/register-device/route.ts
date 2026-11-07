@@ -36,12 +36,15 @@ export async function POST(req: Request) {
   const platform = typeof body.platform === "string" ? body.platform : "ios";
 
   try {
-    const { error } = await supabaseAdmin()
-      .from("devices")
-      .upsert(
-        { token, categories, threshold, enabled, platform, updated_at: new Date().toISOString() },
-        { onConflict: "token" }
-      );
+    const devices = supabaseAdmin().from("devices");
+    // Turning alerts off deletes the device outright — we keep nothing for
+    // people who aren't receiving alerts (see the privacy policy).
+    const { error } = enabled
+      ? await devices.upsert(
+          { token, categories, threshold, enabled, platform, updated_at: new Date().toISOString() },
+          { onConflict: "token" }
+        )
+      : await devices.delete().eq("token", token);
     if (error) throw error;
   } catch {
     return NextResponse.json({ error: "store failed" }, { status: 500 });
