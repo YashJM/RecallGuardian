@@ -1,13 +1,10 @@
 name: Poll recalls for new alerts
 
-# Triggers the push poller on a schedule. GitHub's scheduler aims for the given
-# cadence but can be delayed several minutes under load — fine for alerts that
-# only need to land within a few minutes of the government publishing.
+# Manual trigger for the push poller (Actions tab -> Run workflow).
+# The every-5-minutes schedule lives in Supabase pg_cron (supabase/cron.sql);
+# GitHub's free scheduler only managed ~4-5 runs/day, so it's no longer used.
 on:
-  schedule:
-    - cron: "*/5 * * * *" # every ~5 minutes (the poll is a cheap conditional
-      # request — a 304 when nothing changed — so this is near-free)
-  workflow_dispatch: {} # allow manual runs from the Actions tab
+  workflow_dispatch: {}
 
 jobs:
   poll:
