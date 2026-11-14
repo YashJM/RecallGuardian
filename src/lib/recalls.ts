@@ -343,13 +343,20 @@ let inflight: Promise<Recall[]> | null = null;
  * data cache, which aborts the download. Plain https avoids both; pages stay
  * ISR-cached via their own `revalidate`, and the data lives in the memo.
  */
-function httpsGetText(url: string): Promise<string> {
+function httpsGetText(url: string, timeoutMs = 60_000, redirects = 3): Promise<string> {
   return new Promise((resolve, reject) => {
     const req = https
       .get(url, (res) => {
-        if (res.statusCode !== 200) {
+        const status = res.statusCode ?? 0;
+        if (status >= 300 && status < 400 && res.headers.location && redirects > 0) {
           res.resume();
-          reject(new Error(`Recalls feed returned ${res.statusCode}`));
+          const next = new URL(res.headers.location, url).toString();
+          httpsGetText(next, timeoutMs, redirects - 1).then(resolve, reject);
+          return;
+        }
+        if (status !== 200) {
+          res.resume();
+          reject(new Error(`${url} returned ${status}`));
           return;
         }
         res.setEncoding("utf8");
@@ -359,7 +366,7 @@ function httpsGetText(url: string): Promise<string> {
         res.on("error", reject);
       })
       .on("error", reject);
-    req.setTimeout(60_000, () => req.destroy(new Error("Recalls feed timed out")));
+    req.setTimeout(timeoutMs, () => req.destroy(new Error(`${url} timed out`)));
   });
 }
 
@@ -518,15 +525,9 @@ export async function getRecallExtras(r: Recall): Promise<RecallExtras> {
   const fallback: RecallExtras = { imageUrl: null, distribution: "" };
   if (!r.sourceUrl) return fallback;
   try {
-    const res = await fetch(r.sourceUrl, {
-      next: { revalidate: 86400 },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) {
-      extrasCache.set(r.nid, fallback);
-      return fallback;
-    }
-    const html = await res.text();
+    // Plain https, not fetch(): the page that uses this is already ISR-cached,
+    // so storing every notice in Next's Data Cache only burned write units.
+    const html = await httpsGetText(r.sourceUrl, 8000);
 
     const img = html.match(
       /(?:data-src|src)="(\/sites\/default\/files\/styles\/[^"]+\.(?:png|jpe?g|webp)[^"]*)"/i
