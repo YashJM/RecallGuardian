@@ -10,6 +10,9 @@
  * is ours, and lives here so the website and the iOS app can stay identical.
  */
 
+import https from "node:https";
+import type { Group } from "./groups";
+
 export const FEED_URL =
   "https://recalls-rappels.canada.ca/sites/default/files/opendata-donneesouvertes/HCRSAMOpenData.json";
 
@@ -29,13 +32,7 @@ interface RawRecall {
 }
 
 export type Tier = "critical" | "high" | "standard";
-export type Group =
-  | "food"
-  | "medicine"
-  | "kids"
-  | "vehicles"
-  | "household"
-  | "other";
+export { GROUPS, type Group } from "./groups";
 
 /** Our normalized, ranked recall. */
 export interface Recall {
@@ -55,15 +52,6 @@ export interface Recall {
   tier: Tier;
   score: number;
 }
-
-export const GROUPS: { id: Group; label: string }[] = [
-  { id: "food", label: "Food" },
-  { id: "medicine", label: "Medicine" },
-  { id: "kids", label: "Kids" },
-  { id: "vehicles", label: "Vehicles" },
-  { id: "household", label: "Household" },
-  { id: "other", label: "Other" },
-];
 
 const AGENCY_NAMES: Record<string, string> = {
   CFIA: "Canadian Food Inspection Agency",
@@ -343,16 +331,68 @@ function parseAndSort(raw: RawRecall[]): Recall[] {
     .sort((a, b) => b.score - a.score || b.lastUpdated.localeCompare(a.lastUpdated));
 }
 
+// Concurrent callers share one in-flight download instead of each pulling the
+// whole feed (many pages rendering at once used to hammer the gov server).
+let inflight: Promise<Recall[]> | null = null;
+
+/**
+ * Download the feed with Node's https client rather than fetch(). Next.js
+ * patches fetch: `cache: "no-store"` would make every page using the feed
+ * render on every request (a server function per visit/crawl), and a
+ * revalidate hint makes Next try to copy the ~21MB body into its 2MB-limited
+ * data cache, which aborts the download. Plain https avoids both; pages stay
+ * ISR-cached via their own `revalidate`, and the data lives in the memo.
+ */
+function httpsGetText(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https
+      .get(url, (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          reject(new Error(`Recalls feed returned ${res.statusCode}`));
+          return;
+        }
+        res.setEncoding("utf8");
+        let body = "";
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => resolve(body));
+        res.on("error", reject);
+      })
+      .on("error", reject);
+    req.setTimeout(60_000, () => req.destroy(new Error("Recalls feed timed out")));
+  });
+}
+
+async function downloadFeed(): Promise<Recall[]> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return parseAndSort(JSON.parse(await httpsGetText(FEED_URL)) as RawRecall[]);
+    } catch (e) {
+      lastError = e; // e.g. the gov server dropping the connection mid-download
+    }
+  }
+  throw lastError;
+}
+
 export async function getRecalls(): Promise<Recall[]> {
   if (memo && Date.now() - memo.ts < TTL_MS) return memo.data;
-  const res = await fetch(FEED_URL, { cache: "no-store" });
-  if (!res.ok) {
-    if (memo) return memo.data; // serve stale rather than nothing
-    throw new Error(`Recalls feed returned ${res.status}`);
+  if (!inflight) {
+    inflight = downloadFeed()
+      .then((data) => {
+        memo = { data, ts: Date.now() };
+        return data;
+      })
+      .finally(() => {
+        inflight = null;
+      });
   }
-  const data = parseAndSort((await res.json()) as RawRecall[]);
-  memo = { data, ts: Date.now() };
-  return data;
+  try {
+    return await inflight;
+  } catch (e) {
+    if (memo) return memo.data; // serve stale rather than nothing
+    throw e;
+  }
 }
 
 export interface FeedValidators {

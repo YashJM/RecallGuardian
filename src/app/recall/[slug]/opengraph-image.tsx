@@ -12,6 +12,12 @@ export const contentType = "image/png";
 // Cache the generated card; recall content rarely changes once issued.
 export const revalidate = 86400;
 
+// Empty list = render each card on first request, then cache it (ISR) instead
+// of regenerating it on every link-preview fetch.
+export function generateStaticParams() {
+  return [];
+}
+
 const SEV: Record<string, { color: string; label: string }> = {
   critical: { color: "#c01c2e", label: "Critical" },
   high: { color: "#b0730a", label: "High" },

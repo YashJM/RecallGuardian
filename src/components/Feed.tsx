@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { GROUPS, type Group, type Recall } from "@/lib/recalls";
+import { GROUPS, type Group } from "@/lib/groups";
+import type { Recall } from "@/lib/recalls";
 import RecallCard, { RecallHero } from "./RecallCard";
 import { Medallion } from "./icons";
 

@@ -14,8 +14,10 @@ import RecallCard from "@/components/RecallCard";
 import BackLink from "@/components/BackLink";
 import { CatGlyph, Medallion, WarnIcon, OutboundIcon, PinIcon } from "@/components/icons";
 
-// Rebuild each recall page from fresh data hourly; render unknown ones on demand.
-export const revalidate = 3600;
+// Render each recall page on first visit, then cache it for a day — a recall's
+// content rarely changes once issued, and ~34k pages re-rendering hourly under
+// crawler traffic blew through the hosting quota.
+export const revalidate = 86400;
 export const dynamicParams = true;
 
 // Pre-render only the most recent recalls at build time (fast builds); every
